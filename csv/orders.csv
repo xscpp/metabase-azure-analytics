@@ -1,0 +1,11 @@
+Order ID,Customer ID,Customer Name,Segment,Order Date,Ship Date,Ship Mode,Region,State/Province,City,Product ID,Product Name,Category,Sub-Category,Sales,Quantity,Discount,Profit
+CA-1001,CU-01,Sara Al-Otaibi,Consumer,1/5/2025,1/9/2025,Standard Class,Central,Riyadh,Riyadh,PR-01,ErgoChair Pro,Furniture,Chairs,540.00,2,0.1,88.50
+CA-1001,CU-01,Sara Al-Otaibi,Consumer,1/5/2025,1/9/2025,Standard Class,Central,Riyadh,Riyadh,PR-02,Desk Lamp LED,Office Supplies,Appliances,60.00,3,0,20.10
+CA-1002,CU-02,Fahad Al-Qahtani,Corporate,1/18/2025,1/22/2025,Second Class,East,Dammam,Dammam,PR-03,Laptop Stand,Technology,Accessories,120.00,4,0.05,30.40
+CA-1003,CU-03,Nora Al-Harbi,Home Office,2/2/2025,2/5/2025,First Class,West,Jeddah,Jeddah,PR-04,4K Monitor,Technology,Machines,980.00,2,0.15,-40.00
+CA-1004,CU-01,Sara Al-Otaibi,Consumer,2/14/2025,2/20/2025,Standard Class,Central,Riyadh,Riyadh,PR-05,Filing Cabinet,Furniture,Storage,310.00,1,0,55.00
+CA-1005,CU-04,Omar Al-Zahrani,Consumer,3/3/2025,3/7/2025,Standard Class,South,Abha,Abha,PR-06,Printer Paper,Office Supplies,Paper,45.00,10,0,18.00
+CA-1006,CU-05,Lama Al-Shammari,Corporate,3/21/2025,3/24/2025,Second Class,East,Khobar,Khobar,PR-03,Laptop Stand,Technology,Accessories,150.00,5,0.1,25.00
+CA-1007,CU-02,Fahad Al-Qahtani,Corporate,4/9/2025,4/14/2025,Standard Class,East,Dammam,Dammam,PR-07,Office Chair Mat,Furniture,Chairs,90.00,2,0,12.00
+CA-1008,CU-06,Huda Al-Ghamdi,Home Office,4/25/2025,4/29/2025,First Class,West,Jeddah,Jeddah,PR-08,Wireless Mouse,Technology,Accessories,35.00,6,0.2,4.50
+CA-1009,CU-03,Nora Al-Harbi,Home Office,5/12/2025,5/16/2025,Standard Class,West,Jeddah,Jeddah,PR-04,4K Monitor,Technology,Machines,490.00,1,0.1,-15.00
