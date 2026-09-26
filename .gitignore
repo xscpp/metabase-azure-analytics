@@ -1,0 +1,25 @@
+# Secrets - never commit these
+docker/.env
+terraform/terraform.tfvars
+*.pem
+*.pfx
+
+# Terraform state and cache
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/*.tfstate
+terraform/*.tfstate.backup
+terraform/crash.log
+
+# Local data volumes
+docker/data/
+
+# Dashboard: business data assumed sensitive by default.
+# Delete the next line if your CSVs are non-sensitive sample data you want versioned.
+csv/*.csv
+!csv/.gitkeep
+dashboard/dist/
+
+# OS / editor junk
+.DS_Store
+*.swp

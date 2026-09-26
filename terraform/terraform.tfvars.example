@@ -1,0 +1,14 @@
+# Copy this file to terraform.tfvars and adjust the values, then run terraform apply.
+# DO NOT commit terraform.tfvars to git if it contains anything sensitive (it's already in .gitignore).
+
+project_name          = "metabase-analytics"
+location               = "westeurope"
+environment            = "dev"
+vm_size                = "Standard_B2s"
+admin_username         = "azureadmin"
+ssh_public_key_path    = "~/.ssh/id_rsa.pub"
+
+# SECURITY: restrict these to your own IP address, not 0.0.0.0/0, once you know it.
+# You can find your public IP by running: curl ifconfig.me
+allowed_ssh_cidr       = "0.0.0.0/0"
+allowed_metabase_cidr  = "0.0.0.0/0"

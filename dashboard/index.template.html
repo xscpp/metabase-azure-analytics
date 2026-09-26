@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Internal Analytics and Reporting Platform — Sales Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F6F7F9;
+    --surface:#FFFFFF;
+    --ink:#10192E;
+    --ink-soft:#4B5468;
+    --muted:#8A93A6;
+    --line:#E4E7EE;
+    --accent:#0C7C74;
+    --accent-ink:#075E58;
+    --accent-soft:#E4F3F1;
+    --negative:#B3261E;
+    --negative-soft:#FBEAE9;
+    --radius:10px;
+    --font-ar:'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, sans-serif;
+    --font-en:'IBM Plex Sans', 'Segoe UI', Arial, sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--font-en);
+    font-size:15px;
+    line-height:1.5;
+    min-height:100vh;
+  }
+  .num{font-family:var(--font-en);font-variant-numeric:tabular-nums}
+  a{color:inherit}
+
+  /* ---------- Top bar ---------- */
+  header.topbar{
+    background:var(--surface);
+    border-bottom:1px solid var(--line);
+    padding:18px 28px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+  }
+  .brand{display:flex;align-items:center;gap:12px}
+  .brand svg{flex:none}
+  .brand-text h1{margin:0;font-size:1.15rem;font-weight:700;letter-spacing:.2px}
+  .brand-text p{margin:2px 0 0;font-size:.8rem;color:var(--muted);font-family:var(--font-en)}
+  .meta-note{font-size:.8rem;color:var(--muted);font-family:var(--font-en)}
+
+  /* ---------- Filters ---------- */
+  .filters{
+    max-width:1320px;margin:20px auto 0;padding:0 28px;
+    display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;
+  }
+  .field{display:flex;flex-direction:column;gap:4px;min-width:130px}
+  .field label{font-size:.75rem;color:var(--muted)}
+  .field select, .field input{
+    font:inherit;font-family:var(--font-en);
+    padding:8px 10px;border:1px solid var(--line);border-radius:8px;
+    background:var(--surface);color:var(--ink);
+  }
+  .field select:focus, .field input:focus{outline:2px solid var(--accent);outline-offset:1px}
+  .btn-reset{
+    padding:8px 16px;border-radius:8px;border:1px solid var(--line);
+    background:var(--surface);color:var(--ink-soft);cursor:pointer;font-family:inherit;font-size:.85rem;
+  }
+  .btn-reset:hover{border-color:var(--accent);color:var(--accent-ink)}
+
+  /* ---------- Layout ---------- */
+  main{max-width:1320px;margin:0 auto;padding:20px 28px 60px}
+
+  .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+  .kpi{
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    padding:18px 18px 16px;border-bottom:3px solid var(--accent);
+  }
+  .kpi.negative{border-bottom-color:var(--negative)}
+  .kpi .label{font-size:.82rem;color:var(--ink-soft)}
+  .kpi .value{font-size:clamp(1.4rem,2.2vw,1.85rem);font-weight:700;margin:6px 0 4px;font-family:var(--font-en);font-variant-numeric:tabular-nums}
+  .kpi .caption{font-size:.76rem;color:var(--muted)}
+
+  .grid{display:grid;grid-template-columns:1.6fr 1fr;gap:14px;margin-bottom:14px}
+  .grid.split{grid-template-columns:1fr 1fr}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px}
+  .panel h2{margin:0 0 2px;font-size:.95rem;font-weight:600}
+  .panel .sub{font-size:.78rem;color:var(--muted);margin:0 0 12px}
+  .empty-note{color:var(--muted);font-size:.85rem;padding:24px 0;text-align:center}
+
+  svg.chart{width:100%;height:auto;overflow:visible;direction:ltr}
+  .grid-line{stroke:var(--line);stroke-width:1}
+  .axis-label{fill:var(--muted);font-size:10.5px;font-family:'IBM Plex Sans',sans-serif}
+  .bar-label{fill:var(--ink-soft);font-size:12px;font-family:'IBM Plex Sans',sans-serif}
+  .bar-value{fill:var(--ink);font-size:12px;font-weight:600;font-family:'IBM Plex Sans',sans-serif}
+
+  /* ---------- Table ---------- */
+  .table-panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+  .table-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px 10px;flex-wrap:wrap;gap:10px}
+  .table-head h2{margin:0;font-size:.95rem;font-weight:600}
+  .search{padding:8px 12px;border:1px solid var(--line);border-radius:8px;font:inherit;font-family:var(--font-en);min-width:220px}
+  .table-scroll{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:.85rem}
+  thead th{
+    position:sticky;top:0;background:var(--surface-2,#FBFBFD);
+    text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);
+    color:var(--ink-soft);font-weight:600;cursor:pointer;white-space:nowrap;user-select:none;
+  }
+  thead th[data-num]{font-family:var(--font-en);text-align:right}
+  thead th:hover{color:var(--accent-ink)}
+  thead th .arrow{font-size:.7em;color:var(--accent);margin-inline-start:4px}
+  tbody td{padding:9px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+  tbody td[data-num]{font-family:var(--font-en);text-align:right;font-variant-numeric:tabular-nums}
+  tbody tr:hover{background:var(--accent-soft)}
+  .badge{display:inline-block;padding:2px 9px;border-radius:100px;font-size:.72rem;font-family:var(--font-en)}
+  .badge.yes{background:var(--negative-soft);color:var(--negative)}
+  .badge.no{background:var(--accent-soft);color:var(--accent-ink)}
+  .table-foot{padding:10px 20px 16px;font-size:.78rem;color:var(--muted);font-family:var(--font-en);direction:ltr}
+
+  @media (max-width:900px){
+    .kpi-row{grid-template-columns:repeat(2,1fr)}
+    .grid, .grid.split{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+      <circle cx="17" cy="17" r="16" stroke="#0C7C74" stroke-width="1.4" opacity=".35"/>
+      <path d="M4 17H11L14 8L19 26L22 17H30" stroke="#0C7C74" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </svg>
+    <div class="brand-text">
+      <h1>Internal Analytics and Reporting Platform</h1>
+      <p>Sales Dashboard · Based on Metabase</p>
+    </div>
+  </div>
+  <div class="meta-note" id="metaNote">—</div>
+</header>
+
+<div class="filters">
+  <div class="field">
+    <label>From date</label>
+    <input type="date" id="fDateFrom">
+  </div>
+  <div class="field">
+    <label>To date</label>
+    <input type="date" id="fDateTo">
+  </div>
+  <div class="field">
+    <label>Region</label>
+    <select id="fRegion"><option value="all">All regions</option></select>
+  </div>
+  <div class="field">
+    <label>Category</label>
+    <select id="fCategory"><option value="all">All categories</option></select>
+  </div>
+  <div class="field">
+    <label>Customer segment</label>
+    <select id="fSegment"><option value="all">All segments</option></select>
+  </div>
+  <button class="btn-reset" id="btnReset">Reset</button>
+</div>
+
+<main>
+  <section class="kpi-row" id="kpiRow"></section>
+
+  <section class="grid">
+    <div class="panel">
+      <h2>Monthly sales trend</h2>
+      <p class="sub">Total sales by month, within the current filters</p>
+      <div id="chartTrend"></div>
+    </div>
+    <div class="panel">
+      <h2>Sales by category</h2>
+      <p class="sub">Which product categories drive revenue</p>
+      <div id="chartCategory"></div>
+    </div>
+  </section>
+
+  <section class="grid split">
+    <div class="panel">
+      <h2>Profit by region</h2>
+      <p class="sub">Where profit is being made or lost</p>
+      <div id="chartRegion"></div>
+    </div>
+    <div class="panel">
+      <h2>Top 10 products by sales</h2>
+      <p class="sub">Best-selling products in the selected range</p>
+      <div id="chartProducts"></div>
+    </div>
+  </section>
+
+  <section class="table-panel">
+    <div class="table-head">
+      <h2>Orders</h2>
+      <input class="search" id="searchBox" type="text" placeholder="Search by order ID or customer name…">
+    </div>
+    <div class="table-scroll">
+      <table id="ordersTable">
+        <thead>
+          <tr>
+            <th data-key="id">Order ID</th>
+            <th data-key="date">Date</th>
+            <th data-key="customer">Customer</th>
+            <th data-key="region">Region</th>
+            <th data-key="manager">Regional manager</th>
+            <th data-key="sales" data-num>Sales<span class="arrow"></span></th>
+            <th data-key="profit" data-num>Profit<span class="arrow"></span></th>
+            <th data-key="returned">Returned</th>
+          </tr>
+        </thead>
+        <tbody id="ordersBody"></tbody>
+      </table>
+    </div>
+    <div class="table-foot" id="tableFoot"></div>
+  </section>
+</main>
+
+<script>
+/* ============================================================
+   DATA — injected by dashboard/build.py at build time.
+   Left as `null` here so the template itself is safe to open
+   directly in a browser (shows an empty-state message).
+   ============================================================ */
+const DATA = /*__DATA__*/null;
+
+/* ---------------- helpers ---------------- */
+function parseDate(s){
+  if(!s) return null;
+  if(/^\d{4}-\d{2}-\d{2}/.test(s)) return new Date(s);
+  const m = s.split('/');
+  if(m.length===3) return new Date(+m[2], +m[0]-1, +m[1]); // M/D/YYYY
+  const d = new Date(s);
+  return isNaN(d) ? null : d;
+}
+function ymKey(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+function monthLabel(key){
+  const [y,m] = key.split('-');
+  const names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return names[+m-1]+' '+y.slice(2);
+}
+let CURRENCY = 'USD';
+function money(v){
+  return new Intl.NumberFormat('en-US',{style:'currency',currency:CURRENCY,maximumFractionDigits:0}).format(v||0);
+}
+function moneyCompact(v){
+  return new Intl.NumberFormat('en-US',{notation:'compact',style:'currency',currency:CURRENCY,maximumFractionDigits:1}).format(v||0);
+}
+function pct(v){ return (v*100).toFixed(1)+'%'; }
+function el(tag, attrs={}, html){
+  const e = document.createElement(tag);
+  for(const k in attrs) e.setAttribute(k, attrs[k]);
+  if(html!=null) e.innerHTML = html;
+  return e;
+}
+function svgEmpty(msg){ return `<p class="empty-note">${msg}</p>`; }
+
+/* ---------------- state ---------------- */
+let idx = null;      // indexed lookups built from DATA
+let sortState = {key:'date', dir:-1};
+
+function buildIndex(){
+  const customersById = new Map(DATA.customers.map(c=>[c[0],{id:c[0],name:c[1],segment:c[2]}]));
+  const productsById  = new Map(DATA.products.map(p=>[p[0],{id:p[0],name:p[1],category:p[2],subcat:p[3]}]));
+  const ordersById = new Map(DATA.orders.map(o=>[o[0],{
+    id:o[0], customerId:o[1], orderDate:parseDate(o[2]), shipDate:parseDate(o[3]),
+    shipMode:o[4], region:o[5], state:o[6], city:o[7], returned:!!o[8]
+  }]));
+  const items = DATA.items.map(it=>({orderId:it[0], productId:it[1], sales:it[2]||0, qty:it[3]||0, discount:it[4]||0, profit:it[5]||0}));
+  return {customersById, productsById, ordersById, items};
+}
+
+function distinctSorted(arr){ return [...new Set(arr)].filter(Boolean).sort(); }
+
+function populateFilters(){
+  const regions = distinctSorted([...idx.ordersById.values()].map(o=>o.region));
+  const categories = distinctSorted([...idx.productsById.values()].map(p=>p.category));
+  const segments = distinctSorted([...idx.customersById.values()].map(c=>c.segment));
+  const fill = (sel, values) => values.forEach(v=> sel.appendChild(el('option',{value:v}, v)));
+  fill(document.getElementById('fRegion'), regions);
+  fill(document.getElementById('fCategory'), categories);
+  fill(document.getElementById('fSegment'), segments);
+
+  const dFrom = document.getElementById('fDateFrom');
+  const dTo = document.getElementById('fDateTo');
+  if(DATA.meta.minDate){ const d=parseDate(DATA.meta.minDate); if(d) dFrom.value = d.toISOString().slice(0,10); }
+  if(DATA.meta.maxDate){ const d=parseDate(DATA.meta.maxDate); if(d) dTo.value = d.toISOString().slice(0,10); }
+}
+
+function currentFilters(){
+  return {
+    from: document.getElementById('fDateFrom').value ? new Date(document.getElementById('fDateFrom').value) : null,
+    to: document.getElementById('fDateTo').value ? new Date(document.getElementById('fDateTo').value) : null,
+    region: document.getElementById('fRegion').value,
+    category: document.getElementById('fCategory').value,
+    segment: document.getElementById('fSegment').value,
+  };
+}
+
+/* returns {items: filteredItems, orders: Map(orderId->orderAgg)} */
+function computeFiltered(){
+  const f = currentFilters();
+  const orderAgg = new Map(); // orderId -> {order, sales, profit}
+  const filteredItems = [];
+
+  for(const it of idx.items){
+    const order = idx.ordersById.get(it.orderId);
+    if(!order) continue;
+    if(f.from && order.orderDate && order.orderDate < f.from) continue;
+    if(f.to && order.orderDate && order.orderDate > f.to) continue;
+    if(f.region!=='all' && order.region!==f.region) continue;
+
+    const product = idx.productsById.get(it.productId);
+    if(f.category!=='all' && (!product || product.category!==f.category)) continue;
+
+    const customer = idx.customersById.get(order.customerId);
+    if(f.segment!=='all' && (!customer || customer.segment!==f.segment)) continue;
+
+    filteredItems.push(it);
+    if(!orderAgg.has(order.id)) orderAgg.set(order.id, {order, sales:0, profit:0});
+    const agg = orderAgg.get(order.id);
+    agg.sales += it.sales;
+    agg.profit += it.profit;
+  }
+  return {items: filteredItems, orders: orderAgg};
+}
+
+/* ---------------- KPIs ---------------- */
+function renderKPIs(filtered){
+  const orders = [...filtered.orders.values()];
+  const totalSales = orders.reduce((s,o)=>s+o.sales,0);
+  const totalProfit = orders.reduce((s,o)=>s+o.profit,0);
+  const orderCount = orders.length;
+  const returnedCount = orders.filter(o=>o.order.returned).length;
+  const returnRate = orderCount ? returnedCount/orderCount : 0;
+  const avgOrder = orderCount ? totalSales/orderCount : 0;
+  const margin = totalSales ? totalProfit/totalSales : 0;
+
+  const cards = [
+    {label:'Total sales', value:money(totalSales), caption:`${orderCount.toLocaleString('en-US')} orders within current filters`, neg:false},
+    {label:'Total profit', value:money(totalProfit), caption:`${pct(margin)} profit margin`, neg: totalProfit<0},
+    {label:'Average order value', value:money(avgOrder), caption:'Sales divided by order count', neg:false},
+    {label:'Return rate', value:pct(returnRate), caption:`${returnedCount.toLocaleString('en-US')} of ${orderCount.toLocaleString('en-US')} orders`, neg: returnRate>0.15},
+  ];
+  const row = document.getElementById('kpiRow');
+  row.innerHTML = '';
+  cards.forEach(c=>{
+    row.appendChild(el('div',{class:'kpi'+(c.neg?' negative':'')}, `
+      <div class="label">${c.label}</div>
+      <div class="value num">${c.value}</div>
+      <div class="caption">${c.caption}</div>
+    `));
+  });
+}
+
+/* ---------------- charts (hand-drawn inline SVG, no dependencies) ---------------- */
+function lineChart(points){ // [{label, value}]
+  if(!points.length) return svgEmpty('No data matches the current filters');
+  const W=640,H=220,pad={t:14,r:16,b:26,l:52};
+  const plotW=W-pad.l-pad.r, plotH=H-pad.t-pad.b;
+  const maxV = Math.max(...points.map(p=>p.value), 0);
+  const minV = Math.min(...points.map(p=>p.value), 0);
+  const x = i => pad.l + (points.length===1?0:i*(plotW/(points.length-1)));
+  const y = v => pad.t + plotH - ((v-minV)/((maxV-minV)||1))*plotH;
+
+  const linePath = points.map((p,i)=> (i===0?'M':'L')+x(i).toFixed(1)+','+y(p.value).toFixed(1)).join(' ');
+  const areaPath = linePath + ` L${x(points.length-1).toFixed(1)},${(pad.t+plotH).toFixed(1)} L${x(0).toFixed(1)},${(pad.t+plotH).toFixed(1)} Z`;
+
+  const gridLines = [0,0.5,1].map(t=>{
+    const yy = pad.t + plotH*t;
+    const val = maxV - (maxV-minV)*t;
+    return `<line class="grid-line" x1="${pad.l}" x2="${W-pad.r}" y1="${yy}" y2="${yy}"/>
+            <text class="axis-label" x="${pad.l-6}" y="${yy+3}" text-anchor="end">${moneyCompact(val)}</text>`;
+  }).join('');
+
+  const step = Math.ceil(points.length/7) || 1;
+  const xLabels = points.map((p,i)=> i%step===0 ? `<text class="axis-label" x="${x(i)}" y="${H-6}" text-anchor="middle">${p.label}</text>` : '').join('');
+
+  const dots = points.map((p,i)=> `<circle cx="${x(i)}" cy="${y(p.value)}" r="2.5" fill="var(--accent)"/>`).join('');
+
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}">
+      ${gridLines}
+      <path d="${areaPath}" fill="var(--accent-soft)" stroke="none"/>
+      <path d="${linePath}" fill="none" stroke="var(--accent)" stroke-width="2"/>
+      ${dots}
+      ${xLabels}
+    </svg>`;
+}
+
+function hbarChart(rows, {colorNeg=true}={}){ // [{label, value}]
+  if(!rows.length) return svgEmpty('No data matches the current filters');
+  const W=600, rowH=32, pad={t:6,l:130,r:70};
+  const H = pad.t*2 + rows.length*rowH;
+  const maxAbs = Math.max(...rows.map(r=>Math.abs(r.value)), 1);
+  const plotW = W-pad.l-pad.r;
+
+  const bars = rows.map((r,i)=>{
+    const w = Math.max((Math.abs(r.value)/maxAbs)*plotW, 1);
+    const yTop = pad.t + i*rowH + 6;
+    const barH = rowH-12;
+    const neg = colorNeg && r.value<0;
+    const color = neg ? 'var(--negative)' : 'var(--accent)';
+    return `<text class="bar-label" x="${pad.l-10}" y="${yTop+barH/2+4}" text-anchor="end">${r.label}</text>
+            <rect x="${pad.l}" y="${yTop}" width="${w.toFixed(1)}" height="${barH}" rx="3" fill="${color}"/>
+            <text class="bar-value" x="${pad.l+w+8}" y="${yTop+barH/2+4}">${moneyCompact(r.value)}</text>`;
+  }).join('');
+
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}">${bars}</svg>`;
+}
+
+function renderCharts(filtered){
+  // Monthly trend
+  const byMonth = new Map();
+  filtered.items.forEach(it=>{
+    const order = idx.ordersById.get(it.orderId);
+    if(!order || !order.orderDate) return;
+    const k = ymKey(order.orderDate);
+    byMonth.set(k, (byMonth.get(k)||0) + it.sales);
+  });
+  const trend = [...byMonth.entries()].sort((a,b)=>a[0]<b[0]?-1:1).map(([k,v])=>({label:monthLabel(k), value:v}));
+  document.getElementById('chartTrend').innerHTML = lineChart(trend);
+
+  // Sales by category
+  const byCat = new Map();
+  filtered.items.forEach(it=>{
+    const p = idx.productsById.get(it.productId);
+    const cat = p ? p.category : 'Unspecified';
+    byCat.set(cat, (byCat.get(cat)||0) + it.sales);
+  });
+  const cats = [...byCat.entries()].sort((a,b)=>b[1]-a[1]).map(([label,value])=>({label,value}));
+  document.getElementById('chartCategory').innerHTML = hbarChart(cats, {colorNeg:false});
+
+  // Profit by region
+  const byRegion = new Map();
+  filtered.items.forEach(it=>{
+    const order = idx.ordersById.get(it.orderId);
+    const region = order ? order.region : 'Unspecified';
+    byRegion.set(region, (byRegion.get(region)||0) + it.profit);
+  });
+  const regions = [...byRegion.entries()].sort((a,b)=>b[1]-a[1]).map(([label,value])=>({label,value}));
+  document.getElementById('chartRegion').innerHTML = hbarChart(regions, {colorNeg:true});
+
+  // Top 10 products by sales
+  const byProduct = new Map();
+  filtered.items.forEach(it=>{
+    const p = idx.productsById.get(it.productId);
+    const label = p ? p.name : it.productId;
+    byProduct.set(label, (byProduct.get(label)||0) + it.sales);
+  });
+  const topProducts = [...byProduct.entries()].sort((a,b)=>b[1]-a[1]).slice(0,10)
+    .map(([label,value])=>({label: label.length>28 ? label.slice(0,27)+'…' : label, value}));
+  document.getElementById('chartProducts').innerHTML = hbarChart(topProducts, {colorNeg:false});
+}
+
+/* ---------------- table ---------------- */
+function renderTable(filtered){
+  const search = document.getElementById('searchBox').value.trim().toLowerCase();
+  let rows = [...filtered.orders.values()].map(agg=>{
+    const c = idx.customersById.get(agg.order.customerId);
+    return {
+      id: agg.order.id,
+      date: agg.order.orderDate,
+      customer: c ? c.name : agg.order.customerId,
+      region: agg.order.region,
+      manager: (DATA.meta.managers && DATA.meta.managers[agg.order.region]) || '—',
+      sales: agg.sales,
+      profit: agg.profit,
+      returned: agg.order.returned,
+    };
+  });
+
+  if(search){
+    rows = rows.filter(r => r.id.toLowerCase().includes(search) || r.customer.toLowerCase().includes(search));
+  }
+
+  rows.sort((a,b)=>{
+    const k = sortState.key, dir = sortState.dir;
+    let av=a[k], bv=b[k];
+    if(k==='date'){ av = av?av.getTime():0; bv = bv?bv.getTime():0; }
+    if(typeof av==='string') return av.localeCompare(bv)*dir;
+    return (av-bv)*dir;
+  });
+
+  document.querySelectorAll('#ordersTable thead th').forEach(th=>{
+    const arrow = th.querySelector('.arrow');
+    if(arrow) arrow.textContent = th.dataset.key===sortState.key ? (sortState.dir===1?'▲':'▼') : '';
+  });
+
+  const LIMIT = 200;
+  const shown = rows.slice(0, LIMIT);
+  const body = document.getElementById('ordersBody');
+  body.innerHTML = shown.map(r=>`
+    <tr>
+      <td class="num">${r.id}</td>
+      <td class="num">${r.date ? r.date.toISOString().slice(0,10) : '—'}</td>
+      <td>${r.customer}</td>
+      <td>${r.region}</td>
+      <td>${r.manager}</td>
+      <td data-num>${money(r.sales)}</td>
+      <td data-num>${money(r.profit)}</td>
+      <td>${r.returned ? '<span class="badge yes">Returned</span>' : '<span class="badge no">No</span>'}</td>
+    </tr>`).join('');
+
+  document.getElementById('tableFoot').textContent =
+    rows.length > LIMIT
+      ? `Showing ${LIMIT} of ${rows.length.toLocaleString('en-US')} orders — narrow the filters to see more.`
+      : `${rows.length.toLocaleString('en-US')} orders`;
+}
+
+document.querySelectorAll('#ordersTable thead th').forEach(th=>{
+  th.addEventListener('click', ()=>{
+    const key = th.dataset.key;
+    if(!key) return;
+    sortState.dir = (sortState.key===key) ? -sortState.dir : (key==='date'?-1:1);
+    sortState.key = key;
+    refresh();
+  });
+});
+
+/* ---------------- orchestration ---------------- */
+function refresh(){
+  const filtered = computeFiltered();
+  renderKPIs(filtered);
+  renderCharts(filtered);
+  renderTable(filtered);
+}
+
+function init(){
+  if(!DATA){
+    document.querySelector('main').innerHTML =
+      '<div class="empty-note" style="padding:80px 0">This is the empty template. Run <code>python3 dashboard/build.py</code> to build a real dashboard from your csv/ files.</div>';
+    document.getElementById('metaNote').textContent = 'Template preview — no data injected';
+    return;
+  }
+  CURRENCY = DATA.meta.currency || 'USD';
+  idx = buildIndex();
+  populateFilters();
+  document.getElementById('metaNote').textContent =
+    `${DATA.meta.minDate} → ${DATA.meta.maxDate}  ·  ${DATA.orders.length.toLocaleString('en-US')} orders  ·  ${CURRENCY}`;
+
+  ['fDateFrom','fDateTo','fRegion','fCategory','fSegment'].forEach(id=>
+    document.getElementById(id).addEventListener('change', refresh));
+  document.getElementById('searchBox').addEventListener('input', refresh);
+  document.getElementById('btnReset').addEventListener('click', ()=>{
+    document.getElementById('fRegion').value='all';
+    document.getElementById('fCategory').value='all';
+    document.getElementById('fSegment').value='all';
+    document.getElementById('searchBox').value='';
+    populateFilters();
+    refresh();
+  });
+
+  refresh();
+}
+init();
+</script>
+</body>
+</html>
