@@ -4,7 +4,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 3.100"
+      version = "~> 4.0"
     }
   }
 }
@@ -13,171 +13,114 @@ provider "azurerm" {
   features {}
 }
 
-locals {
-  name_prefix = "${var.project_name}-${var.environment}"
-
-  tags = {
-    project     = var.project_name
-    environment = var.environment
-    managed_by  = "terraform"
-  }
-}
-
-# ---------------------------------------------------------------------------
+# ============================================================
 # Existing Resource Group
-# ---------------------------------------------------------------------------
-# Uses the existing Resource Group because the current Azure account
-# has Contributor access to this Resource Group.
+# ============================================================
+
 data "azurerm_resource_group" "rg" {
-  name = "rg-metabase-project"
+  name = "METADB"
 }
 
-# ---------------------------------------------------------------------------
-# Networking
-# ---------------------------------------------------------------------------
-resource "azurerm_virtual_network" "vnet" {
-  name                = "${local.name_prefix}-vnet"
-  address_space       = ["10.10.0.0/16"]
-  location            = data.azurerm_resource_group.rg.location
+# ============================================================
+# Existing Virtual Network
+# ============================================================
+
+data "azurerm_virtual_network" "vnet" {
+  name                = "vnet-eastus-1"
   resource_group_name = data.azurerm_resource_group.rg.name
-  tags                = local.tags
 }
 
-resource "azurerm_subnet" "subnet" {
-  name                 = "${local.name_prefix}-subnet"
+# ============================================================
+# Existing Subnet
+# ============================================================
+
+data "azurerm_subnet" "subnet" {
+  name                 = "snet-eastus-1"
+  virtual_network_name = data.azurerm_virtual_network.vnet.name
   resource_group_name  = data.azurerm_resource_group.rg.name
-  virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes     = ["10.10.1.0/24"]
 }
 
-resource "azurerm_public_ip" "pip" {
-  name                = "${local.name_prefix}-pip"
-  location            = data.azurerm_resource_group.rg.location
+# ============================================================
+# Existing Public IP
+# ============================================================
+
+data "azurerm_public_ip" "pip" {
+  name                = "METADB-ip"
   resource_group_name = data.azurerm_resource_group.rg.name
-  allocation_method   = "Static"
-  sku                 = "Standard"
-  tags                = local.tags
 }
 
-resource "azurerm_network_security_group" "nsg" {
-  name                = "${local.name_prefix}-nsg"
-  location            = data.azurerm_resource_group.rg.location
+# ============================================================
+# Existing Network Security Group
+# ============================================================
+
+data "azurerm_network_security_group" "nsg" {
+  name                = "METADB-nsg"
   resource_group_name = data.azurerm_resource_group.rg.name
-  tags                = local.tags
-
-  security_rule {
-    name                       = "Allow-SSH"
-    priority                   = 100
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "22"
-    source_address_prefix      = var.allowed_ssh_cidr
-    destination_address_prefix = "*"
-  }
-
-  security_rule {
-    name                       = "Allow-Metabase"
-    priority                   = 110
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "3000"
-    source_address_prefix      = var.allowed_metabase_cidr
-    destination_address_prefix = "*"
-  }
-
-  security_rule {
-    name                       = "Allow-HTTPS"
-    priority                   = 120
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "443"
-    source_address_prefix      = var.allowed_metabase_cidr
-    destination_address_prefix = "*"
-  }
 }
 
-resource "azurerm_network_interface" "nic" {
-  name                = "${local.name_prefix}-nic"
-  location            = data.azurerm_resource_group.rg.location
+# ============================================================
+# Existing Network Interface
+# ============================================================
+
+data "azurerm_network_interface" "nic" {
+  name                = "metadb484"
   resource_group_name = data.azurerm_resource_group.rg.name
-  tags                = local.tags
-
-  ip_configuration {
-    name                          = "internal"
-    subnet_id                     = azurerm_subnet.subnet.id
-    private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = azurerm_public_ip.pip.id
-  }
 }
 
-resource "azurerm_network_interface_security_group_association" "nic_nsg" {
-  network_interface_id      = azurerm_network_interface.nic.id
-  network_security_group_id = azurerm_network_security_group.nsg.id
-}
+# ============================================================
+# Existing Linux Virtual Machine
+# ============================================================
 
-# ---------------------------------------------------------------------------
-# Virtual Machine
-# Ubuntu 22.04 - hosts Docker + Docker Compose + Metabase
-# ---------------------------------------------------------------------------
 resource "azurerm_linux_virtual_machine" "vm" {
-  name                = "${local.name_prefix}-vm"
-  location            = data.azurerm_resource_group.rg.location
+  name                = "METADB"
   resource_group_name = data.azurerm_resource_group.rg.name
-  size                = var.vm_size
-  admin_username      = var.admin_username
+  location            = data.azurerm_resource_group.rg.location
+  size                = "Standard_D2nlds_v6"
+
+  admin_username                  = "azureuser"
+  disable_password_authentication = true
 
   network_interface_ids = [
-    azurerm_network_interface.nic.id
+    data.azurerm_network_interface.nic.id
   ]
 
-  tags = local.tags
-
   admin_ssh_key {
-    username   = var.admin_username
-    public_key = file(var.ssh_public_key_path)
+    username   = "azureuser"
+    public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDLfZqc3dzQHrOq0lBxRhxgealTvdwC9dMJAn+XwQPhVmDjZGXlF6aMYn4O0oBEz8yAAOSyD0QHM+/8SMqArT6WB3WSP3M9EE8z7zDHH4UYFzvhwUKsBVcK6lIxpq8efWdk49CR/lDmn4qE0AXhn4PY7AJeIPSqVTdrHoH6f1fgMOyTWktn5fuBb38XqnzeI265hZl4NbuBQdgZgSCPYMIcDsgwVdA0zMYaQ0V0yTjQzyhUrt79Ftiq3wOeT+6R4q1ZLlJFEJOC6h9dvO99F01uiNNaVT9UIgnDE4YKMDujwMH7wVqW13Tfpjhfeg31lWwZqq+KtMmgkDOD6jVp2u2ctlNUUUZa0abViyU92UjudhMnAZQiRXD6PWzuAdM7nMIqneAfiNR4/u8msI3tN+NRij0bUvOR7WgJZ9C18c4Q9F2W96XXCzanCZpF9bNoBB6Eqmjs3YD4KUwNGlQpbkRvNeq7YwbgEGRlsD2x0xdA+JGHZcdzC5W0VmjqbxgPl6KxMFRz++Gsn9qaN+94eXRwywzOfxrLdk9IFbANPztk4U/75pL4GIFzYxeAF6JQy8UpHz4nyjs/C4+CIA92HapXUyzdTA2uZDZG7qP4FWyt5hNznlbORjIn1L+fiRdUgLPAJkUzsjjkBMIfUSIgyI4lG5iexvWs0stAHPeIuVy89w== shahd@shahd"
   }
 
   os_disk {
     caching              = "ReadWrite"
-    storage_account_type = "Standard_LRS"
-    disk_size_gb         = var.os_disk_size_gb
+    storage_account_type = "Premium_LRS"
+    disk_size_gb         = 30
   }
 
   source_image_reference {
-    publisher = "Canonical"
-    offer     = "0001-com-ubuntu-server-jammy"
-    sku       = "22_04-lts-gen2"
+    publisher = "canonical"
+    offer     = "ubuntu-24_04-lts"
+    sku       = "server"
     version   = "latest"
   }
 
-  # Bootstraps Docker + Docker Compose + Metabase
-  custom_data = base64encode(
-    templatefile("${path.module}/cloud-init.sh.tpl", {})
-  )
-}
+  boot_diagnostics {}
 
-# ---------------------------------------------------------------------------
-# Managed Data Disk
-# ---------------------------------------------------------------------------
-resource "azurerm_managed_disk" "data_disk" {
-  name                 = "${local.name_prefix}-data-disk"
-  location             = data.azurerm_resource_group.rg.location
-  resource_group_name  = data.azurerm_resource_group.rg.name
-  storage_account_type = "Standard_LRS"
-  create_option        = "Empty"
-  disk_size_gb         = 32
-  tags                 = local.tags
-}
+  tags = {
+    environment = "dev"
+    managed_by  = "terraform"
+    project     = "metabase-analytics"
+  }
 
-resource "azurerm_virtual_machine_data_disk_attachment" "data_disk_attach" {
-  managed_disk_id    = azurerm_managed_disk.data_disk.id
-  virtual_machine_id = azurerm_linux_virtual_machine.vm.id
-  lun                = "10"
-  caching            = "ReadWrite"
+  lifecycle {
+    ignore_changes = [
+      admin_ssh_key,
+      os_disk,
+      source_image_reference,
+      secure_boot_enabled,
+      vtpm_enabled,
+      zone,
+      vm_agent_platform_updates_enabled,
+      additional_capabilities,
+      boot_diagnostics
+    ]
+  }
 }

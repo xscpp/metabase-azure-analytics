@@ -23,3 +23,13 @@ dashboard/dist/
 # OS / editor junk
 .DS_Store
 *.swp
+.terraform/
+*.tfstate
+*.tfstate.*
+tfplan
+*.tfplan
+*-state-backup.json
+state-backup.json
+*.pem
+*.key
+*.env
